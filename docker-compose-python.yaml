@@ -1,0 +1,33 @@
+version: "3.4"
+
+services:
+  nginx-proxy:
+    container_name: nginx-proxy-${LANG}
+    build:
+      context: .
+      dockerfile: environment/nginx-proxy-pass/alpine/Dockerfile
+    #restart: always
+    working_dir: /var/www
+    volumes:
+      - ./environment/nginx-proxy-pass/alpine/proxy.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+      - shared
+
+  wsgi-gunicorn:
+    container_name: ${UPSTREAM_APP}
+    build:
+      context: .
+      dockerfile: environment/python/gunicorn/Dockerfile
+    working_dir: /var/www
+    volumes:
+      - ./src/python-flask:/var/www
+    ports:
+      - "9000:9000"
+    networks:
+      - shared
+
+networks:
+  shared:
+    driver: bridge

@@ -1,0 +1,54 @@
+#!/bin/bash -eu
+
+# Use a here document to create and write formatted text to the file
+rm -f ./environment/nginx-proxy-pass/alpine/proxy.conf
+
+cat <<EOT > ./environment/nginx-proxy-pass/alpine/proxy.conf
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 1024M;
+    server_tokens off;
+    sendfile on;
+    keepalive_timeout 60;
+    charset utf-8;
+
+    # enabling compression for proxied requests
+    # https://docs.nginx.com/nginx/admin-guide/web-server/compression/
+    gzip            on;
+    gzip_types      application/xml text/plain text/css text/javascript application/x-javascript application/json;
+    gzip_proxied    any;
+    gzip_min_length 1000;
+
+    # enabling CORS for GET POST OPTIONS request
+    add_header 'Access-Control-Allow-Origin' '*' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+
+    # disable log for useless stuff
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt { access_log off; log_not_found off; }
+
+    # security
+    location ~/\.ht { access_log off; log_not_found off; deny all; }
+    location ~/\.git { access_log off; log_not_found off; deny all; }
+
+    access_log /dev/stdout;
+    # DEBUG MODE is too verbose, remove it after debugging is done
+    error_log  /dev/stderr debug;
+
+    location / {
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_redirect off;
+        # to handle streaming request/responses or Comet, Long polling, or Web sockets disable proxy buffering
+        proxy_buffering on;
+        # running on containers we should make a proxy pass to the container name
+        # unless we using network_mode host then we should proxy to ip address
+        proxy_pass http://${UPSTREAM_APP}:9000;
+    }
+
+}
+
+EOT

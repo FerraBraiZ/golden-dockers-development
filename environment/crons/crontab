@@ -1,0 +1,1 @@
+0 10 * * * /var/www/bin/console reports-billing >> /dev/stdout 2>> /dev/stderr

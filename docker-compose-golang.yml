@@ -1,0 +1,34 @@
+version: "3.7"
+
+services:
+   Application
+   mensageria-seller:
+     extends:
+       file: environment/golang/compose-common.yml
+       service: base-build
+     build:
+       args:
+         - SERVICE_PATH=mensageria-seller
+     ports:
+       - 8080:8080
+
+  db:
+    image: mysql:latest
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - mensageria-seller
+volumes:
+  db:
+networks:
+  mensageria-seller:
